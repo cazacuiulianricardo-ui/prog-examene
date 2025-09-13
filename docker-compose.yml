@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:13
+    container_name: derulo-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: student123
+      POSTGRES_DB: exam
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Flask Backend
+  backend:
+    build: ./backend
+    container_name: derulo-backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:student123@db:5432/exam
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+      - FLASK_DEBUG=1
+      - SECRET_KEY=d2a8f3c6e4b1a9d8c7b6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4
+      - SUPABASE_URL=https://vbopkjfdndwrwwysjfyy.supabase.co
+      - SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZib3BramZkbmR3cnd3eXNqZnl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2MTU2MTAsImV4cCI6MjA2NTE5MTYxMH0.LVIaEPQCChFiPpgJHaUZOv1DKcTrbju-Sr476T1Z5Hs
+      - SUPABASE_JWT_SECRET=NHKbGT35MB9mAeqjV4OGRx8zemYCqUuQnvXpJyJWLb1PErQEdPesubtRryrVyR6dHUiA+5jZeNRrZqfyp2d6ZA==
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+    command: python app.py
+
+  # React Frontend
+  frontend:
+    build: ./frontend
+    container_name: derulo-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    # For development, you can use the following instead of the Dockerfile build
+    # volumes:
+    #   - ./frontend:/app
+    #   - /app/node_modules
+    # command: npm start
+
+volumes:
+  postgres_data:
